@@ -1,9 +1,10 @@
 # ============================================
 # ASTIKAR PORTFOLIO MANAGER - PRO
-# Professional version: weekly execution + Telegram + pyramiding
+# Professional version: weekly execution + Telegram + pyramiding + risk-check
 # ============================================
 
 import os
+import sys
 import pandas as pd
 import numpy as np
 import yfinance as yf
@@ -24,8 +25,8 @@ REGIME_MA = 200
 CRASH_THRESHOLD = -0.12
 
 # Telegram Config
-TELEGRAM_BOT_TOKEN = "YOUR_BOT_TOKEN"
-TELEGRAM_CHAT_ID = "YOUR_CHAT_ID"
+TELEGRAM_BOT_TOKEN = "7980904485:AAGJx_cfhsEdwm6rA_utvX--MjusqTnEk4M"
+TELEGRAM_CHAT_ID = "8144938221"
 
 # ================= UTILITIES =================
 def timestamp():
@@ -70,7 +71,6 @@ def load_sector_mapping():
 def load_positions():
     if os.path.exists(POSITIONS_FILE):
         df = safe_read_csv(POSITIONS_FILE)
-        # ensure columns exist
         for col in ["Ticker","Shares","Avg_Cost","Adds"]:
             if col not in df.columns:
                 df[col] = pd.Series(dtype="object" if col=="Ticker" else "float")
@@ -175,14 +175,26 @@ def generate_orders(selected, weights, capital, price_data):
     return orders, positions
 
 # ================= MAIN =================
-def main():
+def main(risk_only=False):
     ensure_folder()
     tickers = load_universe()
     data = yf.download(tickers, period="12mo", interval="1d", auto_adjust=True, progress=True)
     if isinstance(data.columns,pd.MultiIndex):
         data = data["Close"]
 
-    # Market Filters
+    # ===== DAILY RISK-CHECK MODE =====
+    if risk_only:
+        if not regime_filter():
+            send_telegram("📉 Daily Risk Check: Market not bullish! Stay in cash!")
+            print("Daily Risk Check: Market not bullish.")
+        elif not crash_filter():
+            send_telegram("⚠️ Daily Risk Check: Market near crash threshold!")
+            print("Daily Risk Check: Crash threshold reached.")
+        else:
+            print("Daily Risk Check: Market conditions OK.")
+        return
+
+    # ===== WEEKLY PORTFOLIO EXECUTION =====
     if not regime_filter():
         send_telegram("Market not in bullish stage. Stay in cash!")
         print("Market not bullish. Exiting.")
@@ -211,12 +223,14 @@ def main():
         out_file = os.path.join(OUTPUT_FOLDER,f"weekly_orders_{timestamp_str}.csv")
         df.to_csv(out_file,index=False)
         print("Orders saved to", out_file)
-        send_telegram(f"Weekly Portfolio executed.\nOrders saved: {out_file}\nBalance: ₹{round(balance,2)}")
+        send_telegram(f"✅ Weekly Portfolio executed.\nOrders saved: {out_file}\nBalance: ₹{round(balance,2)}")
     else:
         send_telegram("No trades this week. Portfolio remains unchanged.")
 
     save_positions(positions)
     print("Positions updated.")
 
+# ================= ENTRY POINT =================
 if __name__=="__main__":
-    main()
+    risk_only_mode = "--risk-check" in sys.argv
+    main(risk_only=risk_only_mode)
