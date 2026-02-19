@@ -2,7 +2,7 @@ name: Weekly Astikar Portfolio
 
 on:
   schedule:
-    - cron: "0 18 * * FRI" # Friday 6 PM UTC
+    - cron: "30 10 * * FRI" # Friday 4 PM IST
   workflow_dispatch:
 
 jobs:
@@ -11,12 +11,15 @@ jobs:
     steps:
       - name: Checkout repo
         uses: actions/checkout@v3
+
       - name: Setup Python
         uses: actions/setup-python@v4
         with:
           python-version: 3.13
+
       - name: Install requirements
         run: |
-          pip install pandas yfinance requests numpy
+          pip install --no-cache-dir pandas yfinance requests numpy
+
       - name: Run Astikar Engine
         run: python Astikar_Portfolio_Manager_Pro.py
