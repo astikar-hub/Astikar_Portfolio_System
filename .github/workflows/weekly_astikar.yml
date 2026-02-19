@@ -1,0 +1,38 @@
+name: Weekly Astikar Portfolio Engine
+
+on:
+  schedule:
+    # Every Friday at 18:30 IST
+    - cron: '0 12 * * 5'
+  workflow_dispatch:
+
+jobs:
+  run_astikar_engine:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Setup Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.13'
+
+      - name: Install dependencies
+        run: |
+          pip install --upgrade pip
+          pip install -r requirments.py
+          pip install yfinance pandas numpy ta
+
+      - name: Run Astikar Engine
+        run: |
+          python astikar_engine.py
+
+      - name: Commit & Push updated CSV
+        run: |
+          git config --global user.name "AstikarBot"
+          git config --global user.email "astikar@example.com"
+          git add *.csv
+          git commit -m "Update portfolio positions and equity curve"
+          git push
