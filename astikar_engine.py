@@ -20,8 +20,8 @@ MAX_POSITION_MULTIPLIER = 2.0
 REGIME_MA = 200
 CRASH_THRESHOLD = -0.12
 RSI_THRESHOLD = 55
-TELEGRAM_BOT_TOKEN = "YOUR_BOT_TOKEN"
-TELEGRAM_CHAT_ID = "YOUR_CHAT_ID"
+TELEGRAM_BOT_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN", "")
+TELEGRAM_CHAT_ID = os.getenv("TELEGRAM_CHAT_ID", "")
 
 OUTPUT_FOLDER = "Portfolio_Output"
 POSITIONS_FILE = os.path.join(OUTPUT_FOLDER, "portfolio_positions.csv")
@@ -40,10 +40,14 @@ def ensure_output_folder():
         os.makedirs(OUTPUT_FOLDER)
 
 def send_telegram(message):
+    if not TELEGRAM_BOT_TOKEN or not TELEGRAM_CHAT_ID:
+        print("Telegram secrets are missing.")
+        return
     url = f"https://api.telegram.org/bot{TELEGRAM_BOT_TOKEN}/sendMessage"
     payload = {"chat_id": TELEGRAM_CHAT_ID, "text": message}
     try:
-        requests.post(url, data=payload)
+        r = requests.post(url, data=payload, timeout=20)
+        print("Telegram status:", r.status_code, r.text)
     except Exception as e:
         print("Telegram send failed:", e)
 
