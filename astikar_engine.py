@@ -113,8 +113,9 @@ def generate_portfolio(data):
 
 def generate_orders(selected, capital, price_data):
     positions = load_positions()
+    if positions.empty or "Ticker" not in positions.columns:
+        positions = pd.DataFrame(columns=["Ticker", "Shares", "Avg_Cost", "Adds"])
     orders = []
-    base_allocation = capital / TOP_N
 
     # Sell positions not in selected
     for ticker in positions["Ticker"].tolist():
